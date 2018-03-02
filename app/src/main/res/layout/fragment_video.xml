@@ -2,14 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="org.sparkr.taiwan_baseball.NewsFragment">
+    tools:context="org.sparkr.taiwan_baseball.VideoFragment">
 
     <!-- TODO: Update blank fragment layout -->
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/newsRecyclerView"
+        android:id="@+id/videoRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/white" />
-
 </FrameLayout>

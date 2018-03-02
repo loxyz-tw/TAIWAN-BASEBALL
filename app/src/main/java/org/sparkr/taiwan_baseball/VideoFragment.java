@@ -1,5 +1,6 @@
 package org.sparkr.taiwan_baseball;
 
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -7,7 +8,6 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,17 +19,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
+import org.sparkr.taiwan_baseball.Model.Video;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jsoup.*;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.sparkr.taiwan_baseball.Model.News;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -40,33 +38,33 @@ import okhttp3.Response;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link NewsFragment#newInstance} factory method to
+ * Use the {@link VideoFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class NewsFragment extends Fragment {
+public class VideoFragment extends Fragment {
 
     private OkHttpClient client = new OkHttpClient();
-    private List newsList;
-    private NewsAdapter adapter;
+    private List videoList;
+    private VideoAdapter adapter;
     private RecyclerView recyclerView;
-    private int page = 0;
+    private String page = "";
     private int visibleThreshold = 4;
     private Boolean isLoading;
     int lastVisibleItem, totalItemCount;
 
-    public NewsFragment() {
-        // Required empty public constructor
 
+    public VideoFragment() {
+        // Required empty public constructor
     }
 
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @return A new instance of fragment NewsFragment.
+     * @return A new instance of fragment VideoFragment.
      */
-    public static NewsFragment newInstance() {
-        NewsFragment fragment = new NewsFragment();
+    public static VideoFragment newInstance() {
+        VideoFragment fragment = new VideoFragment();
         Bundle args = new Bundle();
         fragment.setArguments(args);
         return fragment;
@@ -76,21 +74,19 @@ public class NewsFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        newsList = new ArrayList<>();
-        adapter = new NewsAdapter(newsList);
-
         getActivity().findViewById(R.id.loadingPanel).setVisibility(View.VISIBLE);
 
-        fetchNews(page);
-
+        videoList = new ArrayList<Video.VideoItem>();
+        adapter = new VideoAdapter(videoList);
+        fetchVideo(page);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_news, container, false);
+        View view = inflater.inflate(R.layout.fragment_video, container, false);
 
-        recyclerView = (RecyclerView) view.findViewById(R.id.newsRecyclerView);
+        recyclerView = (RecyclerView) view.findViewById(R.id.videoRecyclerView);
         final LinearLayoutManager layoutManager = new LinearLayoutManager(this.getContext());
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(layoutManager);
@@ -121,13 +117,12 @@ public class NewsFragment extends Fragment {
                     recyclerView.post(new Runnable() {
                         @Override
                         public void run() {
-                            newsList.add(null);
-                            adapter.notifyItemInserted(newsList.size() - 1);
+                            videoList.add(null);
+                            adapter.notifyItemInserted(videoList.size() - 1);
                         }
                     });
 
-                    page++;
-                    fetchNews(page);
+                    fetchVideo(page);
                     isLoading = true;
                 }
             }
@@ -141,8 +136,8 @@ public class NewsFragment extends Fragment {
         isLoading = false;
     }
 
-    private void fetchNews(final int newPage) {
-        Request request = new Request.Builder().url(this.getString(R.string.CPBLSourceURL) + "news/lists/news_lits.html?per_page=" + newPage).build();
+    private void fetchVideo(final String newPage) {
+        Request request = new Request.Builder().url(this.getString(R.string.YoutubeAPIURL) + "search?part=snippet&channelId=UCDt9GAqyRzc2e5BNxPrwZrw&maxResults=15&order=date&pageToken="+ newPage +"&key=" + this.getString(R.string.YoutubeAPIKey)).build();
         Call mcall = client.newCall(request);
         mcall.enqueue(new Callback() {
             @Override
@@ -151,6 +146,7 @@ public class NewsFragment extends Fragment {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            getActivity().findViewById(R.id.loadingPanel).setVisibility(View.GONE);
                             Toast.makeText(getContext(), "發生錯誤，請稍後再試。", Toast.LENGTH_LONG).show();
                         }
                     });
@@ -160,40 +156,23 @@ public class NewsFragment extends Fragment {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 final String resStr = response.body().string();
-                News news;
 
                 try {
-                    Document doc = Jsoup.parse(resStr);
+                    GsonBuilder gsonBuilder = new GsonBuilder();
+                    Gson gson = gsonBuilder.create();
 
-                    String topNewsTitle = doc.select(".news_head_title > a").text();
-                    String topNewsDate = doc.select(".news_head_date").text();
-                    String topNewsUrl = doc.select(".games_news_pic > a").attr("href").toString();
-                    String topNewsImageUrl = doc.select(".games_news_pic > a > img").attr("src").toString();
+                    JsonObject jsonObject = gson.fromJson(resStr, JsonObject.class);
+                    final Video video = gson.fromJson(jsonObject, Video.class);
 
-                    if(!topNewsTitle.isEmpty()) {
-                        news = new News(topNewsTitle, topNewsDate, topNewsImageUrl, topNewsUrl);
-                        newsList.add(news);
-                    }
+                    videoList.addAll(video.getVideoItem());
 
-                    final Elements nodes = doc.select(".news_row");
-                    for(Element node: nodes) {
-                        if (node.select(".news_row_date").text().isEmpty()) {continue;}
 
-                        String newstitle = node.select(".news_row_cont > div > a.news_row_title").text().trim();
-                        String tmpeDate = node.select(".news_row_date").text().trim();
-                        String newsDate = tmpeDate;
-                        String newsImageUrl = node.select(".news_row_pic > img").attr("src").toString();
-                        String newsUrl = node.select(".news_row_cont > div > a").attr("href").toString();
-
-                        news = new News(newstitle, newsDate, newsImageUrl, newsUrl);
-                        newsList.add(news);
-                    }
-
-                    adapter.setOnClick(new NewsAdapter.OnItemClicked(){
+                    page = jsonObject.get("nextPageToken").getAsString();
+                    adapter.setOnClick(new VideoAdapter.OnItemClicked(){
                         @Override
                         public void onItemClick(int position) {
-                            News selectedNews = (News) newsList.get(position);
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getActivity().getString(R.string.CPBLSourceURL) + selectedNews.getNewsUrl()));
+                            Video.VideoItem selectedVideo = (Video.VideoItem) videoList.get(position);
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getActivity().getString(R.string.YoutubeURL) + selectedVideo.getId().getVideoId()));
                             startActivity(intent);
                         }
                     });
@@ -203,9 +182,9 @@ public class NewsFragment extends Fragment {
                         public void run() {
                             adapter.notifyDataSetChanged();
 
-                            if((newsList.size() - nodes.size() - 1) > 0) {
-                                newsList.remove(newsList.size() - nodes.size() - 1);
-                                adapter.notifyItemRemoved(newsList.size());
+                            if((videoList.size() - video.getVideoItem().size() - 1) > 0) {
+                                videoList.remove(videoList.size() - video.getVideoItem().size() - 1);
+                                adapter.notifyItemRemoved(videoList.size());
                             }
 
                             setLoaded();
@@ -223,32 +202,32 @@ public class NewsFragment extends Fragment {
         });
     }
 
-    public static class NewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    public static class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-        private List<News> news;
+        private List<Video.VideoItem> videos;
         private OnItemClicked onClick;
 
         public interface OnItemClicked {
             void onItemClick(int position);
         }
 
-        public NewsAdapter(List<News> news) {
-            this.news = news;
+        public VideoAdapter(List<Video.VideoItem> videos) {
+            this.videos = videos;
         }
 
-        public class NewsViewHolder extends RecyclerView.ViewHolder {
+        public class VideoViewHolder extends RecyclerView.ViewHolder {
 
-            private final TextView newsTitleTextView;
-            private final TextView newsDateTextView;
-            private final ImageView newsImageView;
-            private String newsURL;
+            private final TextView videoTitleTextView;
+            private final TextView videoDateTextView;
+            private final ImageView videoImageView;
+            private String videoId;
 
-            public NewsViewHolder(View itemView) {
+            public VideoViewHolder(View itemView) {
                 super(itemView);
 
-                newsTitleTextView = (TextView) itemView.findViewById(R.id.newsTitleTextView);
-                newsDateTextView = (TextView) itemView.findViewById(R.id.newsDateTextView);
-                newsImageView = (ImageView) itemView.findViewById(R.id.newsImageView);
+                videoTitleTextView = (TextView) itemView.findViewById(R.id.videoTitleTextView);
+                videoDateTextView = (TextView) itemView.findViewById(R.id.videoDateTextView);
+                videoImageView = (ImageView) itemView.findViewById(R.id.videoImageView);
             }
         }
 
@@ -264,37 +243,38 @@ public class NewsFragment extends Fragment {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             Context context = parent.getContext();
-
             if(viewType == 0) {
-                View view = LayoutInflater.from(context).inflate(R.layout.news_list, parent, false);
-                NewsViewHolder newsViewHolder = new NewsViewHolder(view);
-                return newsViewHolder;
+                View view = LayoutInflater.from(context).inflate(R.layout.video_list, parent, false);
+                VideoViewHolder videoViewHolder = new VideoViewHolder(view);
+                return videoViewHolder;
 
             } else {
                 View view = LayoutInflater.from(context).inflate(R.layout.item_loading, parent, false);
                 LoadingViewHolder loadingViewHolder = new LoadingViewHolder(view);
                 return loadingViewHolder;
+
             }
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
-            if(holder instanceof NewsViewHolder) {
-                News newsData = news.get(position);
-                NewsViewHolder newsViewHolder = (NewsViewHolder)holder;
-                newsViewHolder.newsTitleTextView.setText(newsData.getTitle());
-                newsViewHolder.newsDateTextView.setText(newsData.getDate());
-                newsViewHolder.newsURL = newsData.getNewsUrl();
-                Glide.with(newsViewHolder.newsImageView.getContext()).load(newsData.getImageUrl()).centerCrop().into(newsViewHolder.newsImageView);
+            if(holder instanceof VideoViewHolder) {
+                Video.VideoItem videoData = videos.get(position);
+                VideoViewHolder videoViewHolder = (VideoViewHolder)holder;
+                videoViewHolder.videoTitleTextView.setText(videoData.getSnippet().getVideoTitle());
+                videoViewHolder.videoId = videoData.getId().getVideoId();
+                videoViewHolder.videoDateTextView.setText(videoData.getSnippet().getVideoDate().substring(0, 10).replace("-", "."));
+                Glide.with(videoViewHolder.videoImageView.getContext()).load(videoData.getSnippet().getThumbnails().getHigh().getVideoImageUrl()).centerCrop().into(videoViewHolder.videoImageView);
 
-                newsViewHolder.newsImageView.setOnClickListener(new View.OnClickListener() {
+
+                videoViewHolder.videoImageView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         onClick.onItemClick(position);
                     }
                 });
 
-            } else if(holder instanceof LoadingViewHolder){
+            } else if(holder instanceof LoadingViewHolder) {
                 LoadingViewHolder loadingViewHolder = (LoadingViewHolder)holder;
                 loadingViewHolder.progressBar.setIndeterminate(true);
             }
@@ -302,18 +282,18 @@ public class NewsFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return news.size();
+            return videos.size();
         }
 
         @Override
         public int getItemViewType(int position) {
-            return (news.get(position) == null) ? 1 : 0;
+            return (videos.get(position) == null) ? 1 : 0;
         }
 
         public void setOnClick(OnItemClicked onClick) {
             this.onClick = onClick;
         }
-
     }
+
 
 }

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="75dp" >
+
+    <ImageView
+        android:id="@+id/rankTeamImageView"
+        android:layout_width="55sp"
+        android:layout_height="55sp"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="14sp"
+        android:layout_marginStart="14sp"
+        android:contentDescription="teamImage"
+        app:srcCompat="@color/white" />
+
+    <TextView
+        android:id="@+id/winTextView"
+        android:layout_width="30sp"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/tieTextView"
+        android:layout_marginRight="14sp"
+        android:textSize="17sp"
+        android:textAlignment="center"
+        android:textColor="#000"
+        android:text="120" android:layout_toStartOf="@+id/tieTextView" android:layout_marginEnd="14sp" />
+
+    <TextView
+        android:id="@+id/tieTextView"
+        android:layout_width="30sp"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/loseTextView"
+        android:layout_marginRight="14sp"
+        android:textSize="17sp"
+        android:textAlignment="center"
+        android:textColor="#000"
+        android:text="120" android:layout_toStartOf="@+id/loseTextView" android:layout_marginEnd="14sp" />
+
+    <TextView
+        android:id="@+id/loseTextView"
+        android:layout_width="30sp"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/rateTextView"
+        android:layout_marginRight="14sp"
+        android:textSize="17sp"
+        android:textAlignment="center"
+        android:textColor="#000"
+        android:text="120" android:layout_toStartOf="@+id/rateTextView" android:layout_marginEnd="14sp" />
+
+    <TextView
+        android:id="@+id/rateTextView"
+        android:layout_width="50sp"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/gbTextView"
+        android:layout_marginRight="14sp"
+        android:textSize="17sp"
+        android:textAlignment="center"
+        android:textColor="#000"
+        android:text="0.483" android:layout_toStartOf="@+id/gbTextView" android:layout_marginEnd="14sp" />
+
+    <TextView
+        android:id="@+id/gbTextView"
+        android:layout_width="35sp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="15sp"
+        android:textAlignment="center"
+        android:textColor="#000"
+        android:textSize="17sp"
+        android:text="14.5" android:layout_alignParentEnd="true" android:layout_marginEnd="15sp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="1sp"
+        android:layout_alignParentBottom="true"
+        android:background="#EFEFF4">
+
+    </RelativeLayout>
+</RelativeLayout>
